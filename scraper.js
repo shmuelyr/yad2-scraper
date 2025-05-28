@@ -28,6 +28,14 @@ const stages = {
     [types.UNKNOWN]: []
 };
 
+const is_not_ad = (imgSrc, lnkSrc) => {
+    const img_keywords = ["project", "cdn.", ".treedis"]
+    if (img_keywords.filter(x => imgSrc.includes(x)).length > 0) {
+        return false;
+    }
+    return true;
+}
+
 const scrapeItemsAndExtractImgUrls = async (url) => {
     const yad2Html = await getYad2Response(url);
     if (!yad2Html) {
@@ -65,7 +73,7 @@ const scrapeItemsAndExtractImgUrls = async (url) => {
         const imgSrc = $($imageList[i]).find("img").attr('src');
         const lnkSrc = $($linkList[i]).find("a").attr('href');
 
-        if (imgSrc && lnkSrc) {
+        if (imgSrc && lnkSrc && is_not_ad(imgSrc, lnkSrc)) {
             data.push({'img':imgSrc, 'lnk':  new URL(lnkSrc, url).href})
         }
     })
