@@ -105,7 +105,7 @@ const checkIfHasNewItem = async (data, topic) => {
     data.forEach(url => {
         if (!savedUrls.includes(url['img'])) {
             savedUrls.push(url['img']);
-            newItems.push(url['lnk']);
+            newItems.push({'lnk': url['lnk'], 'img': url['img']});
             shouldUpdateFile = true;
         }
     });
@@ -121,6 +121,44 @@ const createPushFlagForWorkflow = () => {
     fs.writeFileSync("push_me", "")
 }
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const sendMsgRetry = async (telenode, msg, chatId, retry = 3) => {
+    return telenode.sendTextMessage(msg, chatId)
+        .catch(e => {
+            if (retry > 0) {
+                return sleep(1000)
+                    .then(_ => sendMsgRetry(telenode, msg, chatId, retry - 1));
+            } else {
+                // not fail on network error.. we will remove the item
+                // from our backup and we will try again next time.
+                return false;
+            }
+        });
+}
+
+const removeFromDB = async (data, topic) => {
+    const filePath = `./data/${topic}.json`;
+    let savedUrls = [];
+    try {
+        savedUrls = require(filePath);
+    } catch (e) {
+        if (e.code === "MODULE_NOT_FOUND") {
+            return;
+        } else {
+            console.log(e);
+            throw new Error(`Could not read / create ${filePath}`);
+        }
+    }
+    let size = savedUrls.length;
+    savedUrls = savedUrls.map(x => { return data.includes(x) ? undefined : x }).filter(x => x);
+    if (size != savedUrls.size) {
+        const updatedUrls = JSON.stringify(savedUrls, null, 2);
+        fs.writeFileSync(filePath, updatedUrls);
+        createPushFlagForWorkflow();
+    }
+}
+
 const scrape = async (topic, url) => {
     const apiToken = process.env.API_TOKEN || config.telegramApiToken;
     const chatId = process.env.CHAT_ID || config.chatId;
@@ -130,9 +168,16 @@ const scrape = async (topic, url) => {
         const scrapeDataResults = await scrapeItemsAndExtractImgUrls(url);
         const newItems = await checkIfHasNewItem(scrapeDataResults, topic);
         if (newItems.length > 0) {
-            await telenode.sendTextMessage(`${newItems.length} new items`, chatId)
-            .then(Promise.all(
-                newItems.map(msg => telenode.sendTextMessage(msg, chatId))));
+            let i = 1;
+            let notSend = [];
+            Promise.all(
+                newItems.map(msg => sendMsgRetry(telenode,
+                    `${topic}:${i++}/${newItems.length} ${msg['lnk']}`, chatId).then(r => {
+                    if (r == false) {
+                         notSend.push(msg['img']);
+                    }
+                })));
+            removeFromDB(notSend);
         } else {
             // await telenode.sendTextMessage("No new items were added", chatId);
         }
