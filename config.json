@@ -3,8 +3,16 @@
   "chatId": null,
   "projects": [
     {
-      "topic": "Tuscon_2019-2020",
-      "url": "https://www.yad2.co.il/vehicles/cars?manufacturer=51&model=10762&year=2018-2025&price=20000-55000&km=-1-130000&hand=2-2&subModel=116193,116194,120858,120856&imgOnly=1"
+      "topic": "RehovotForSale",
+      "url": "https://www.yad2.co.il/realestate/forsale?maxPrice=5000000&minRooms=5&maxRooms=5&property=5%2C39&topArea=41&area=12&city=8400&zoom=12"
+    },
+    {
+      "topic": "RehovotForRent",
+      "url": "https://www.yad2.co.il/realestate/rent?maxPrice=11000&minRooms=5&property=3%2C5%2C39&topArea=41&area=12&city=8400"
+    },
+    {
+      "topic": "MazkeretForRent",
+      "url": "https://www.yad2.co.il/realestate/rent?maxPrice=11000&minRooms=5&property=3%2C5%2C39&topArea=41&area=12&city=0028&zoom=13"
     }
   ]
 }
